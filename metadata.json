@@ -1,0 +1,5 @@
+{
+  "name": "SyncLyric AI",
+  "description": "Upload a song and let AI generate synchronized lyrics (LRC) automatically.",
+  "requestFramePermissions": []
+}
