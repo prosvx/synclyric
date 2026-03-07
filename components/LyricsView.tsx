@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { LyricLine } from '../types';
-import { Play, Pause, RotateCcw, Download, Check, Undo2, Trash2, Edit2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Download, Check, Undo2, Trash2, Edit2, Wand2, Loader2 } from 'lucide-react';
 import { formatTime } from '../utils/helpers';
 
 interface LyricsViewProps {
@@ -9,9 +9,11 @@ interface LyricsViewProps {
   audioUrl: string;
   onReset: () => void;
   title?: string;
+  onAutoSync?: () => void;
+  isAutoSyncing?: boolean;
 }
 
-const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, setLyrics, audioUrl, onReset, title = "Música Desconhecida" }) => {
+const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, setLyrics, audioUrl, onReset, title = "Música Desconhecida", onAutoSync, isAutoSyncing }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -181,6 +183,17 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, setLyrics, audioUrl, on
             </p>
           </div>
           <div className="flex space-x-2">
+            {onAutoSync && (
+              <button 
+                onClick={onAutoSync}
+                disabled={isAutoSyncing}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Sincronizar Automaticamente (Experimental)"
+              >
+                {isAutoSyncing ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+                <span className="hidden sm:inline">Auto-Sync</span>
+              </button>
+            )}
             <button 
               onClick={downloadLrc}
               className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition"

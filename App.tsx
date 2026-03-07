@@ -3,7 +3,7 @@ import { AudioFile, LyricLine, AppState } from './types';
 import FileUploader from './components/FileUploader';
 import LyricsView from './components/LyricsView';
 import { fileToBase64, parseLyrics } from './utils/helpers';
-import { generateLyricsFromAudio } from './services/geminiService';
+import { generateLyricsFromAudio, autoSyncLyrics } from './services/geminiService';
 import { Sparkles, Music2, Loader2, AlertCircle } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -11,6 +11,7 @@ const App: React.FC = () => {
   const [audioFile, setAudioFile] = useState<AudioFile | null>(null);
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isAutoSyncing, setIsAutoSyncing] = useState(false);
 
   const handleFileSelect = async (file: File) => {
     try {
@@ -73,6 +74,25 @@ const App: React.FC = () => {
     setLyrics([]);
     setError(null);
     setAppState(AppState.IDLE);
+  };
+
+  const handleAutoSync = async () => {
+    if (!audioFile) return;
+    try {
+      setIsAutoSyncing(true);
+      setError(null);
+      
+      const currentText = lyrics.map(l => l.text).join('\n');
+      const rawLrc = await autoSyncLyrics(audioFile.base64, audioFile.file.type, currentText);
+      const parsedLyrics = parseLyrics(rawLrc);
+      
+      setLyrics(parsedLyrics);
+    } catch (err) {
+      console.error(err);
+      setError("Falha ao sincronizar automaticamente. Tente novamente.");
+    } finally {
+      setIsAutoSyncing(false);
+    }
   };
 
   return (
@@ -171,6 +191,8 @@ const App: React.FC = () => {
                 audioUrl={audioFile.previewUrl} 
                 onReset={handleReset}
                 title={audioFile.file.name}
+                onAutoSync={handleAutoSync}
+                isAutoSyncing={isAutoSyncing}
               />
             </div>
           )}
