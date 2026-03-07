@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AudioFile, LyricLine, AppState } from './types';
 import FileUploader from './components/FileUploader';
 import LyricsView from './components/LyricsView';
-import { fileToBase64, parseLyrics } from './utils/helpers';
+import { fileToBase64, parseLyrics, formatTime } from './utils/helpers';
 import { generateLyricsFromAudio, autoSyncLyrics } from './services/geminiService';
 import { Sparkles, Music2, Loader2, AlertCircle } from 'lucide-react';
 
@@ -18,8 +18,8 @@ const App: React.FC = () => {
       setAppState(AppState.UPLOADING);
       setError(null);
       
-      if (file.size > 25 * 1024 * 1024) { 
-        throw new Error("Arquivo muito grande. Por favor envie arquivos menores que 25MB.");
+      if (file.size > 10 * 1024 * 1024) { 
+        throw new Error("Arquivo muito grande. Por favor envie arquivos menores que 10MB (limite do servidor).");
       }
 
       const base64 = await fileToBase64(file);
@@ -59,9 +59,13 @@ const App: React.FC = () => {
 
       setLyrics(parsedLyrics);
       setAppState(AppState.PLAYING);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Falha ao transcrever. Tente novamente.");
+      if (err.message?.includes('xhr error') || err.message?.includes('ProxyUnaryCall')) {
+         setError("O arquivo é muito grande para ser processado pela IA. Tente um arquivo menor ou mais curto.");
+      } else {
+         setError("Falha ao transcrever. Tente novamente.");
+      }
       setAppState(AppState.READY_TO_GENERATE);
     }
   };
@@ -87,9 +91,13 @@ const App: React.FC = () => {
       const parsedLyrics = parseLyrics(rawLrc);
       
       setLyrics(parsedLyrics);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Falha ao sincronizar automaticamente. Tente novamente.");
+      if (err.message?.includes('xhr error') || err.message?.includes('ProxyUnaryCall')) {
+         setError("O arquivo é muito grande para ser processado pela IA. Tente um arquivo menor ou mais curto.");
+      } else {
+         setError("Falha ao sincronizar automaticamente. Tente novamente.");
+      }
     } finally {
       setIsAutoSyncing(false);
     }

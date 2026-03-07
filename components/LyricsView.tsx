@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { LyricLine } from '../types';
-import { Play, Pause, RotateCcw, Download, Check, Undo2, Trash2, Edit2, Wand2, Loader2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Download, Check, Undo2, Trash2, Edit2, Wand2, Loader2, Copy } from 'lucide-react';
 import { formatTime } from '../utils/helpers';
 
 interface LyricsViewProps {
@@ -16,6 +16,7 @@ interface LyricsViewProps {
 const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, setLyrics, audioUrl, onReset, title = "Música Desconhecida", onAutoSync, isAutoSyncing }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastSyncTimeRef = useRef<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -81,6 +82,10 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, setLyrics, audioUrl, on
   // The Manual Sync Action
   const syncCurrentLine = useCallback(() => {
     if (nextUnsyncedIndex === -1 || !audioRef.current) return;
+
+    const now = Date.now();
+    if (now - lastSyncTimeRef.current < 200) return; // 200ms cooldown to prevent double-syncs
+    lastSyncTimeRef.current = now;
 
     const currentTimestamp = audioRef.current.currentTime;
     
@@ -165,6 +170,22 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, setLyrics, audioUrl, on
     URL.revokeObjectURL(url);
   };
 
+  const copyLrc = async () => {
+    const content = lyrics
+      .filter(l => l.timestamp !== null)
+      .map(l => `${l.formattedTime} ${l.text}`)
+      .join('\n');
+    
+    try {
+      await navigator.clipboard.writeText(content);
+      // Optional: you could add a toast notification here
+      alert('Letra copiada para a área de transferência!');
+    } catch (err) {
+      console.error('Falha ao copiar texto: ', err);
+      alert('Falha ao copiar a letra.');
+    }
+  };
+
   const syncedCount = lyrics.filter(l => l.timestamp !== null).length;
   const progressPercent = (syncedCount / lyrics.length) * 100;
   const canUndo = nextUnsyncedIndex === -1 || nextUnsyncedIndex > 0;
@@ -194,6 +215,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, setLyrics, audioUrl, on
                 <span className="hidden sm:inline">Auto-Sync</span>
               </button>
             )}
+            <button 
+              onClick={copyLrc}
+              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition"
+              title="Copiar .LRC"
+            >
+              <Copy size={20} />
+            </button>
             <button 
               onClick={downloadLrc}
               className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition"

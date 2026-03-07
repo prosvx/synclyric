@@ -4,7 +4,6 @@ export const generateLyricsFromAudio = async (base64Audio: string, mimeType: str
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    // gemini-3-flash-preview is sufficient and faster for pure transcription
     const model = 'gemini-3-flash-preview'; 
 
     const prompt = `
@@ -35,10 +34,6 @@ export const generateLyricsFromAudio = async (base64Audio: string, mimeType: str
             text: prompt
           }
         ]
-      },
-      config: {
-        // Lower thinking budget as this is a simpler transcription task
-        thinkingConfig: { thinkingBudget: 0 },
       }
     });
 
@@ -63,7 +58,6 @@ export const autoSyncLyrics = async (base64Audio: string, mimeType: string, curr
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    // gemini-3-flash-preview is sufficient and faster for pure transcription
     const model = 'gemini-3-flash-preview'; 
 
     const prompt = `
@@ -76,8 +70,10 @@ export const autoSyncLyrics = async (base64Audio: string, mimeType: string, curr
       Instructions:
       1. Return the lyrics in standard LRC format: [mm:ss.xx] lyric text
       2. Do NOT change the text of the lyrics, only add the timestamps at the beginning of each line.
-      3. Return ONLY the synchronized LRC text.
-      4. Do NOT include markdown blocks.
+      3. Be highly explicit about handling uneven lyric lines, rapid singing, and pauses.
+      4. Prioritize capturing all spoken words, ad-libs, and background vocals accurately. Ensure every provided line gets an accurate timestamp corresponding to when it is first vocalized.
+      5. Return ONLY the synchronized LRC text.
+      6. Do NOT include markdown blocks.
     `;
 
     const response = await ai.models.generateContent({
@@ -94,9 +90,6 @@ export const autoSyncLyrics = async (base64Audio: string, mimeType: string, curr
             text: prompt
           }
         ]
-      },
-      config: {
-        thinkingConfig: { thinkingBudget: 0 },
       }
     });
 
